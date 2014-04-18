@@ -24,7 +24,8 @@
 #include <cmath>
 #include <string.h>
 
-#include <algorithm>
+#include <boost/random/uniform_smallint.hpp>
+#include <boost/random/uniform_int.hpp>
 
 #include "protein/iterators/atom_iterator.h"
 #include "energy/energy_term.h"
@@ -43,6 +44,18 @@ private:
      typedef phaistos::EnergyTermCommon<TermNoe<CHAIN_TYPE>,CHAIN_TYPE> EnergyTermCommon;
 
 public:
+
+    //! Returns a random integer from {min, min+1, ... max-1, max}.
+    int rand_int(int min, int max, RandomNumberEngine *rne) {
+         boost::uniform_smallint<> distribution(min, max);
+         boost::variate_generator<RandomNumberEngine&, boost::uniform_smallint<> > generator(*rne, distribution);
+         return generator();
+    }
+
+
+
+
+     RandomNumberEngine *random_number_engine;
 
     //! Contact.
     //! A contact between two atoms is specified by the residue numbers and
@@ -133,6 +146,12 @@ public:
      };
 
 
+    void shuffle_vector(std::vector<Contact> &v, RandomNumberEngine *rne) {
+
+        boost::uniform_int<> uni_dist;
+        boost::variate_generator<RandomNumberEngine&, boost::uniform_int<> > randomNumber(*rne, uni_dist);
+        std::random_shuffle(v.begin(), v.end(),randomNumber);
+    }
      //! vector of Contact objects
      std::vector<Contact> contact_map;
      std::vector<Contact> contact_map_old;
@@ -246,49 +265,83 @@ public:
 
                     contact_map.push_back(contact);
 
-                    std::cout << contact << std::endl;
                }
           }
+          shuffle_vector(contact_map, this->random_number_engine);
+          print_active_contacts(contact_map);
      }
 
     // http://nmr.cit.nih.gov/xplor-nih/doc/current/xplor/node384.html
-    inline double flat_bottom_potential(double r_actual, double r_equilibrium, double epsilon) {
+    // inline double flat_bottom_potential(double r_actual, double r_equilibrium, double epsilon) {
 
-        double R = r_actual;
-        double d = r_equilibrium;
+    //     double R = r_actual;
+    //     double d = r_equilibrium;
 
-        double exponent = 2.0;
-        double dplus    = 4.0;
-        double dminus   = 2.0;
+    //     double exponent = 2.0;
+    //     double dplus    = 4.0;
+    //     double dminus   = 2.0;
 
-        double e = 0.0;
+    //     double e = 0.0;
 
-        if ((d + dplus ) < R) {
-            e = R - (d + dplus);
-        } else if ((d - dminus) < R) {
-            e = 0.0;
+    //     if ((d + dplus ) < R) {
+    //         e = R - (d + dplus);
+    //     } else if ((d - dminus) < R) {
+    //         e = 0.0;
+    //     } else {
+    //         e = ((d - dminus) - R);
+    //     }
+
+    //     e = std::pow(e, exponent) * epsilon;
+
+    //     return e;
+    // }
+
+    // https://www.rosettacommons.org/manuals/archive/rosetta3.5_user_guide/de/d50/constraint_file.html
+    // http://www.pnas.org/content/suppl/2012/06/25/1203013109.DCSupplemental/Appendix.pdf
+
+    inline double rosetta_bounded_potential(double r_actual, double r_equilibrium, double epsilon) {
+
+        double d0 = r_equilibrium;
+
+        double lb = 1.5;
+        double ub = d0 + 0.15;
+        double sd = 0.3;
+        double rswitch = ub + 0.5 * sd;
+
+        double x = r_actual;
+
+        double energy = 0.0;
+
+        if (x < lb) {
+            energy = std::pow((x - lb)/sd, 2.0);
+
+        } else if (x < ub) {
+            energy = 0.0;
+
+        } else if (x < rswitch) {
+            energy = std::pow((x - ub)/sd, 2.0);
+
         } else {
-            e = ((d - dminus) - R);
+            energy = 1.0 / sd * (x - rswitch) + std::pow(rswitch, 2.0);
+
         }
 
-        e = std::pow(e, exponent) * epsilon;
+        return energy * epsilon;
 
-        return e;
     }
 
-
-
-    inline double lennard_jones_potential(double r_actual, double r_equilibrium, double epsilon) {
-        double r_ratio = r_equilibrium / r_actual;
-        return epsilon * (std::pow(r_ratio, 12.0)
-                            - 2 * std::pow(r_ratio, 6.0));
-    }
+    // inline double lennard_jones_potential(double r_actual, double r_equilibrium, double epsilon) {
+    //     double r_ratio = r_equilibrium / r_actual;
+    //     return epsilon * (std::pow(r_ratio, 12.0)
+    //                         - 2 * std::pow(r_ratio, 6.0));
+    // }
 
 
      //! Constructor
      TermNoe(CHAIN_TYPE *chain, const Settings &settings=Settings(),
                  RandomNumberEngine *random_number_engine = &random_global)
           : EnergyTermCommon(chain, "noe", settings, random_number_engine),
+            random_number_engine(random_number_engine),
             settings(settings) {
 
         std::ifstream input_stream(settings.contact_map_filename.c_str());
@@ -304,6 +357,8 @@ public:
         did_swap = false;
 
     }
+
+
 
     void print_active_contacts(std::vector<Contact> map) {
 
@@ -342,7 +397,8 @@ public:
             double epsilon = settings.force_constant;
 
             // energy += lennard_jones_potential(r_actual, r_equilibrium, epsilon);
-            energy += flat_bottom_potential(r_actual, r_equilibrium, epsilon);
+            // energy += flat_bottom_potential(r_actual, r_equilibrium, epsilon);
+            energy += rosetta_bounded_potential(r_actual, r_equilibrium, epsilon);
         }
 
         return energy;
@@ -354,6 +410,7 @@ public:
      TermNoe(const TermNoe &other, RandomNumberEngine *random_number_engine,
                  int thread_index, CHAIN_TYPE *chain)
           : EnergyTermCommon(other, random_number_engine, thread_index, chain),
+            random_number_engine(random_number_engine),
             contact_map(other.contact_map),
             contact_map_old(other.contact_map_old),
             did_swap(other.did_swap),
@@ -380,8 +437,12 @@ public:
         if (moveInfo) {
             if (moveInfo->modified_angles.empty() == true) {
 
-                unsigned int disable_contact = rand() % settings.active_restraints;
-                unsigned int enable_contact = (rand() % (this->contact_map.size() - settings.active_restraints)) + settings.active_restraints;
+                // unsigned int disable_contact = rand() % settings.active_restraints;
+                // unsigned int enable_contact = (rand() % (this->contact_map.size() - settings.active_restraints)) + settings.active_restraints;
+                unsigned int disable_contact = (unsigned int)rand_int(0, settings.active_restraints - 1, 
+                                                                      this->random_number_engine);
+                unsigned int enable_contact = (unsigned int)rand_int(settings.active_restraints, this->contact_map.size() - 1,
+                                                                     this->random_number_engine);
 
                 Contact temp_swap;
                 temp_swap = this->contact_map[disable_contact];
