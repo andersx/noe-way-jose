@@ -23,9 +23,14 @@
 #include <vector>
 #include <cmath>
 #include <string.h>
+#include <limits>
 
 #include <boost/random/uniform_smallint.hpp>
 #include <boost/random/uniform_int.hpp>
+
+// #include <boost/type_traits/is_base_of.hpp>
+#include <boost/assign/list_of.hpp>
+
 
 #include "protein/iterators/atom_iterator.h"
 #include "energy/energy_term.h"
@@ -127,34 +132,101 @@ public:
                  << c.distance << ")";
                return o;
           }
+         // //! \param weight weight for this contact
+         //  //! Overload >> operator for Contact pointer (compact input)
+         //  friend std::istream &operator>>(std::istream &input, Contact &c) {
+         //       input.ignore(1);
+         //       input >> c.residue_index1;
+         //       input.ignore(1);
+         //       input >> c.atom_type1;
+         //       input.ignore(1);
+         //       input >> c.residue_index2;
+         //       input.ignore(1);
+         //       input >> c.atom_type2;
+         //       input.ignore(1);
+         //       input >> c.distance;
+         //       input.ignore(1);
+         //       return input;
+         //  }
 
-          //! Overload >> operator for Contact pointer (compact input)
-          friend std::istream &operator>>(std::istream &input, Contact &c) {
-               input.ignore(1);
-               input >> c.residue_index1;
-               input.ignore(1);
-               input >> c.atom_type1;
-               input.ignore(1);
-               input >> c.residue_index2;
-               input.ignore(1);
-               input >> c.atom_type2;
-               input.ignore(1);
-               input >> c.distance;
-               input.ignore(1);
-               return input;
+     };
+
+    //!
+    class AmbiguousContact {
+    public:
+
+         //! Index in chain of residue1
+         int residue_index1;
+
+         //! Atom type of atom1
+         std::vector<definitions::AtomEnum> atom1_types;
+         int residue_index2;
+         std::vector<definitions::AtomEnum> atom2_types;
+
+         //! Distance between atom1 and atom2
+         double distance;
+
+         //! Default constructor
+         AmbiguousContact(){
+                   // if(contact.residue_index1 - 1 >= (this->chain)->size() ||
+                   //    contact.residue_index2 - 1 >= (this->chain)->size()) {
+                   //     std::cout << "# CONTACT ERROR:" << contact.residue_index1 << " "
+                   //                                     << contact.atom_type1 << " "
+                   //                                     << contact.residue_index2 << " "
+                   //                                     << contact.atom_type2 << std::endl;
+                   //     exit(EXIT_FAILURE);
+                   // }
+
+                   // if(!(*(this->chain))[contact.residue_index1 - 1].has_atom(contact.atom_type1)) {
+                   //     std::cout << "# CONTACT ERROR:" << contact.residue_index1 << " "
+                   //                                     << contact.atom_type1 << " "
+                   //                                     << contact.residue_index2 << " "
+                   //                                     << contact.atom_type2 << std::endl;
+                   //     exit(EXIT_FAILURE);
+                   // }
+
+                   // if(!(*(this->chain))[contact.residue_index1 - 1].has_atom(contact.atom_type1)) {
+                   //     std::cout << "# CONTACT ERROR:" << contact.residue_index1 << " "
+                   //                                     << contact.atom_type1 << " "
+                   //                                     << contact.residue_index2 << " "
+                   //                                     << contact.atom_type2 << std::endl;
+                   //     exit(EXIT_FAILURE);
+                   // }
+         }
+
+         //! Copy constructor
+         AmbiguousContact(int residue_index1, std::vector<definitions::AtomEnum> atom1_types,
+                 int residue_index2, std::vector<definitions::AtomEnum> atom2_types,
+                 double distance)
+              : residue_index1(residue_index1),
+                atom1_types(atom1_types),
+                residue_index2(residue_index2),
+                atom2_types(atom2_types),
+                distance(distance) {}
+
+          //! Overload << operator for Contact (compact output)
+          friend std::ostream &operator<<(std::ostream &o, const AmbiguousContact &c) {
+               o << "("
+                 << c.residue_index1 + 1 << ","
+                 << c.atom1_types << ","
+                 << c.residue_index2 + 1 << ","
+                 << c.atom2_types << ","
+                 << c.distance << ")";
+               return o;
           }
      };
 
 
-    void shuffle_vector(std::vector<Contact> &v, RandomNumberEngine *rne) {
+    void shuffle_vector(std::vector<AmbiguousContact> &v, RandomNumberEngine *rne) {
 
         boost::uniform_int<> uni_dist;
         boost::variate_generator<RandomNumberEngine&, boost::uniform_int<> > randomNumber(*rne, uni_dist);
         std::random_shuffle(v.begin(), v.end(),randomNumber);
     }
+
      //! vector of Contact objects
-     std::vector<Contact> contact_map;
-     std::vector<Contact> contact_map_old;
+     std::vector<AmbiguousContact> contact_map;
+     std::vector<AmbiguousContact> contact_map_old;
 
      bool did_swap;
 
@@ -163,7 +235,7 @@ public:
      public:
 
           //! The force constant between CA atoms
-          double force_constant;
+          double weight_constant;
           unsigned int active_restraints;
           bool seamless;
 
@@ -175,24 +247,24 @@ public:
           //!    Example:
           //!    5 CA 1 CA 13.029
           //!    6 CA 2 CA 13.168 2.0 1.5
-          std::string contact_map_filename;
+          std::string upl_filename;
 
-          //! Constructor and a reasonable default value for the force constant (5.0)
-          Settings(double force_constant=1.0,
+          //! Constructor and a reasonable default values
+          Settings(double weight_constant=1.0,
                    unsigned int active_restraints=1,
                    bool seamless=false,
-                   std::string contact_map_filename="")
-               : force_constant(force_constant),
+                   std::string upl_filename="")
+               : weight_constant(weight_constant),
                  active_restraints(active_restraints),
                  seamless(seamless),
-                 contact_map_filename(contact_map_filename) {}
+                 upl_filename(upl_filename) {}
 
           //! Output operator
           friend std::ostream &operator<<(std::ostream &o, const Settings &settings) {
-               o << "force-constant:" << settings.force_constant << "\n";
+               o << "weight-constant:" << settings.weight_constant << "\n";
                o << "active-restraints:" << settings.active_restraints<< "\n";
                o << "seamless:" << settings.seamless << "\n";
-               o << "contact-map-file: " << settings.contact_map_filename << "\n";
+               o << "upl-filename: " << settings.upl_filename << "\n";
                o << static_cast<const typename EnergyTerm<CHAIN_TYPE>::Settings>(settings);
                return o;
           }
@@ -203,6 +275,8 @@ public:
      //! \param chain Chain object for contact map·
      //! \param input_stream Stream from which data is read.
      //! \param settings settings object
+
+     // 157 GLU  H     168 THR  H       4.5
      void read_contact_map(CHAIN_TYPE *chain, std::istream &input_stream, const Settings &settings=Settings()) {
 
           while (input_stream.good()) {
@@ -221,49 +295,136 @@ public:
 
                // Parse single-line entry (compact format)
                if (split_line.size() == 1) {
-                    std::istringstream buffer(line);
-                    buffer >> contact_map;
-                    std::cout << "1: " << contact_map << "\n";
+                    //std::istringstream buffer(line);
+                    //buffer >> contact_map;
+                    //std::cout << "1: " << contact_map << "\n";
                     return;
-                    // contact_map = boost::lexical_cast<Contact>(line);
+                    //// contact_map = boost::lexical_cast<Contact>(line);
                } else {
-                    int residue_index1 = boost::lexical_cast<int>(split_line[0]);
-                    definitions::AtomEnum atom_type1 = boost::lexical_cast<definitions::AtomEnum>(split_line[1]);
-                    int residue_index2 = boost::lexical_cast<int>(split_line[2]);
-                    definitions::AtomEnum atom_type2 = boost::lexical_cast<definitions::AtomEnum>(split_line[3]);
-                    double distance = boost::lexical_cast<double>(split_line[4]);;
-                    Contact contact(residue_index1,
-                                    atom_type1,
-                                    residue_index2,
-                                    atom_type2,
-                                    distance);
-                    if(contact.residue_index1 - 1 >= (this->chain)->size() ||
-                       contact.residue_index2 - 1 >= (this->chain)->size()) {
-                        std::cout << "# CONTACT ERROR:" << contact.residue_index1 << " "
-                                                        << contact.atom_type1 << " "
-                                                        << contact.residue_index2 << " "
-                                                        << contact.atom_type2 << std::endl;
-                        exit(EXIT_FAILURE);
-                    }
+                    int residue1_index = boost::lexical_cast<int>(split_line[0]) - 1;
+                    int residue2_index = boost::lexical_cast<int>(split_line[3]) - 1;
 
-                    if(!(*(this->chain))[contact.residue_index1 - 1].has_atom(contact.atom_type1)) {
-                        std::cout << "# CONTACT ERROR:" << contact.residue_index1 << " "
-                                                        << contact.atom_type1 << " "
-                                                        << contact.residue_index2 << " "
-                                                        << contact.atom_type2 << std::endl;
-                        exit(EXIT_FAILURE);
-                    }
+                    std::string atom1_type = boost::lexical_cast<std::string>(split_line[2]);
+                    std::string atom2_type = boost::lexical_cast<std::string>(split_line[5]);
 
-                    if(!(*(this->chain))[contact.residue_index1 - 1].has_atom(contact.atom_type1)) {
-                        std::cout << "# CONTACT ERROR:" << contact.residue_index1 << " "
-                                                        << contact.atom_type1 << " "
-                                                        << contact.residue_index2 << " "
-                                                        << contact.atom_type2 << std::endl;
-                        exit(EXIT_FAILURE);
-                    }
+                    std::cout << split_line << std::endl;
+
+                    std::vector<definitions::AtomEnum> atom1_atoms;
+                    std::vector<definitions::AtomEnum> atom2_atoms;
+
+                    if (atom1_type == "QD") { atom1_atoms = boost::assign::list_of(definitions::HD1)(definitions::HD2); }
+
+                    else if (atom1_type == "QE") { atom1_atoms = boost::assign::list_of(definitions::HE1)(definitions::HE2); }
+
+                    else if (atom1_type == "QB") { 
+
+                        if (boost::lexical_cast<std::string>(split_line[1]) == "ALA") {
+                            atom1_atoms = boost::assign::list_of(definitions::HB1)(definitions::HB2)(definitions::HB3); 
+                        } else {
+                            atom1_atoms = boost::assign::list_of(definitions::HB2)(definitions::HB3); 
+                        }
+
+                    } else if (atom1_type == "QD1") { atom1_atoms = boost::assign::list_of(definitions::HD11)(definitions::HD12)(definitions::HD13); }
+
+                    else if (atom1_type == "QD2") { atom1_atoms = boost::assign::list_of(definitions::HD21)(definitions::HD22)(definitions::HD23); }
+
+                    else if (atom1_type == "QG1") { atom1_atoms = boost::assign::list_of(definitions::HG11)(definitions::HG12)(definitions::HG13); }
+
+                    else if (atom1_type == "QG2") { atom1_atoms = boost::assign::list_of(definitions::HG21)(definitions::HG22)(definitions::HG23); }
+
+                    else if (atom1_type == "QQD") { atom1_atoms = boost::assign::list_of(definitions::HD11)(definitions::HD12)(definitions::HD13)
+                                                                                        (definitions::HD21)(definitions::HD22)(definitions::HD23); }
+
+                    else if (atom1_type == "QQG") { atom1_atoms = boost::assign::list_of(definitions::HG11)(definitions::HG12)(definitions::HG13)
+                                                                                        (definitions::HG21)(definitions::HG22)(definitions::HG23); }
+
+                    else { atom1_atoms = boost::assign::list_of(boost::lexical_cast<definitions::AtomEnum>(split_line[2])); }
+
+
+                    if (atom2_type == "QD") { atom2_atoms = boost::assign::list_of(definitions::HD1)(definitions::HD2); }
+
+                    else if (atom2_type == "QE") { atom2_atoms = boost::assign::list_of(definitions::HE1)(definitions::HE2); }
+
+                    else if (atom2_type == "QB") { 
+
+                        if (boost::lexical_cast<std::string>(split_line[4]) == "ALA") {
+                            atom2_atoms = boost::assign::list_of(definitions::HB1)(definitions::HB2)(definitions::HB3); 
+                        } else {
+                            atom2_atoms = boost::assign::list_of(definitions::HB2)(definitions::HB3); 
+                        }
+
+                    } else if (atom2_type == "QD1") { atom2_atoms = boost::assign::list_of(definitions::HD11)(definitions::HD12)(definitions::HD13); }
+
+                    else if (atom2_type == "QD2") { atom2_atoms = boost::assign::list_of(definitions::HD21)(definitions::HD22)(definitions::HD23); }
+
+                    else if (atom2_type == "QG1") { atom2_atoms = boost::assign::list_of(definitions::HG11)(definitions::HG12)(definitions::HG13); }
+
+                    else if (atom2_type == "QG2") { atom2_atoms = boost::assign::list_of(definitions::HG21)(definitions::HG22)(definitions::HG23); }
+
+                    else if (atom2_type == "QQD") { atom2_atoms = boost::assign::list_of(definitions::HD11)(definitions::HD12)(definitions::HD13)
+                                                                                        (definitions::HD21)(definitions::HD22)(definitions::HD23); }
+
+                    else if (atom2_type == "QQG") { atom2_atoms = boost::assign::list_of(definitions::HG11)(definitions::HG12)(definitions::HG13)
+                                                                                        (definitions::HG21)(definitions::HG22)(definitions::HG23); }
+
+                    else { atom2_atoms = boost::assign::list_of(boost::lexical_cast<definitions::AtomEnum>(split_line[5])); }
+
+                    // std::cout << atom1_atoms << std::endl;
+                    // std::cout << atom2_atoms << std::endl;
+
+
+
+
+                    // std::vector<Atom> atoms1;
+                    // std::vector<Atom> atoms2;
+
+
+                    // std::cout << atom1_type << "  " << atom2_type << std::endl;
+
+                    // int residue_index1 = boost::lexical_cast<int>(split_line[0]);
+                    // definitions::AtomEnum atom_type1 = boost::lexical_cast<definitions::AtomEnum>(split_line[1]);
+                    // int residue_index2 = boost::lexical_cast<int>(split_line[2]);
+                    // definitions::AtomEnum atom_type2 = boost::lexical_cast<definitions::AtomEnum>(split_line[3]);
+                    double distance = boost::lexical_cast<double>(split_line[6]);;
+
+                    AmbiguousContact contact(residue1_index,
+                                             atom1_atoms,
+                                             residue2_index,
+                                             atom2_atoms,
+                                             distance);
+
+
+
+                   if(contact.residue_index1 >= (this->chain)->size() ||
+                      contact.residue_index2 >= (this->chain)->size()) {
+                       std::cout << "# CONTACT ERROR: " << contact.residue_index1 + 1 << " "
+                                                       << contact.atom1_types << " "
+                                                       << contact.residue_index2 + 1 << " "
+                                                       << contact.atom2_types << std::endl;
+                       exit(EXIT_FAILURE);
+                   }
+
+                for(unsigned int i = 0; i < contact.atom1_types.size(); i++) {
+
+                   if(!(*(this->chain))[contact.residue_index1].has_atom(contact.atom1_types[i])) {
+                       std::cout << "# CONTACT ERROR: " << contact.residue_index1 + 1<< " "
+                                                       << contact.atom1_types[i] << std::endl;
+                       exit(EXIT_FAILURE);
+                   }
+                }
+
+                for(unsigned int i = 0; i < contact.atom2_types.size(); i++) {
+
+                   if(!(*(this->chain))[contact.residue_index2].has_atom(contact.atom2_types[i])) {
+                       std::cout << "# CONTACT ERROR: " << contact.residue_index2 + 1 << " "
+                                                       << contact.atom2_types[i] << std::endl;
+                       exit(EXIT_FAILURE);
+                   }
+                }
 
 
                     contact_map.push_back(contact);
+                    std::cout << contact << std::endl;
 
                }
           }
@@ -344,10 +505,10 @@ public:
             random_number_engine(random_number_engine),
             settings(settings) {
 
-        std::ifstream input_stream(settings.contact_map_filename.c_str());
+        std::ifstream input_stream(settings.upl_filename.c_str());
 
         if (!input_stream.is_open()) {
-            std::cerr << "# Error: Cannot open contact map file " << settings.contact_map_filename << " .\n";
+            std::cerr << "# Error: Cannot open UPL file " << settings.upl_filename << " .\n";
             exit(EXIT_FAILURE);
         }
         read_contact_map(chain, input_stream, settings);
@@ -360,41 +521,82 @@ public:
 
 
 
-    void print_active_contacts(std::vector<Contact> map) {
+    void print_active_contacts(std::vector<AmbiguousContact> map) {
 
-    std::cout << "# THREAD " << this->thread_index
-              << " CONTACTS  ";
+       //  std::cout << "# THREAD " << this->thread_index
+       //        << " CONTACTS  ";
 
-         for(unsigned int i=0; i < settings.active_restraints; i++){
-            Vector_3D r1 = (*(this->chain))(map[i].residue_index1 - 1,
-                              map[i].atom_type1)->position;
-            Vector_3D r2 = (*(this->chain))(map[i].residue_index2 - 1,
-                              map[i].atom_type2)->position;
+       //  for (unsigned int i=0; i < settings.active_restraints; i++){
+       //      Vector_3D r1 = (*(this->chain))(map[i].residue_index1 - 1,
+       //                        map[i].atom_type1)->position;
+       //      Vector_3D r2 = (*(this->chain))(map[i].residue_index2 - 1,
+       //                        map[i].atom_type2)->position;
 
-            double r_actual = (r1 - r2).norm();
+       //      double r_actual = (r1 - r2).norm();
 
-             std::cout << map[i] << "," << r_actual << ",";
-        }
+       //      std::cout << map[i] << "," << r_actual << ",";
+       //  }
 
-        std::cout << std::endl;
+       //  std::cout << std::endl;
     }
 
-    double get_energy_contacts(std::vector<Contact> map) {
+    double calc_distance_guntert(AmbiguousContact contact) {
+
+
+        double r_actual = 0.0;
+
+        for (unsigned int j = 0; j < contact.atom1_types.size(); j++) {
+            for (unsigned int k = 0; k < contact.atom2_types.size(); k++) {
+
+
+            Vector_3D r1 = (*(this->chain))(contact.residue_index1,
+                          contact.atom1_types[j])->position;
+            Vector_3D r2 = (*(this->chain))(contact.residue_index2,
+                          contact.atom2_types[k])->position;
+            r_actual +=  std::pow((r1 - r2).norm_squared(), -3.0);
+            }
+        }
+
+        return std::pow(r_actual, (-1.0/6.0));
+    }
+
+
+    double calc_distance_nearest(AmbiguousContact contact) {
+
+        double r_actual = std::numeric_limits<double>::infinity();
+
+        for (unsigned int j = 0; j < contact.atom1_types.size(); j++) {
+            for (unsigned int k = 0; k < contact.atom2_types.size(); k++) {
+
+
+            Vector_3D r1 = (*(this->chain))(contact.residue_index1,
+                          contact.atom1_types[j])->position;
+            Vector_3D r2 = (*(this->chain))(contact.residue_index2,
+                          contact.atom2_types[k])->position;
+            double r_pair = (r1 - r2).norm();
+
+            if (r_pair < r_actual) r_actual = r_pair;
+
+
+             }
+        }
+
+        return r_actual;
+    } 
+
+    double get_energy_contacts(std::vector<AmbiguousContact> map) {
 
          double energy = 0.0;
 
          // for(unsigned int i=0; i<this->contact_map.size(); i++){
          for(unsigned int i=0; i < settings.active_restraints; i++){
 
+            // double r_actual = calc_distance_guntert(map[i]);
 
-            Vector_3D r1 = (*(this->chain))(map[i].residue_index1 - 1,
-                              map[i].atom_type1)->position;
-            Vector_3D r2 = (*(this->chain))(map[i].residue_index2 - 1,
-                              map[i].atom_type2)->position;
+            double r_actual = calc_distance_nearest(map[i]);
 
-            double r_actual = (r1 - r2).norm();
             double r_equilibrium = map[i].distance;
-            double epsilon = settings.force_constant;
+            double epsilon = settings.weight_constant;
 
             // energy += lennard_jones_potential(r_actual, r_equilibrium, epsilon);
             // energy += flat_bottom_potential(r_actual, r_equilibrium, epsilon);
@@ -437,14 +639,12 @@ public:
         if (moveInfo) {
             if (moveInfo->modified_angles.empty() == true) {
 
-                // unsigned int disable_contact = rand() % settings.active_restraints;
-                // unsigned int enable_contact = (rand() % (this->contact_map.size() - settings.active_restraints)) + settings.active_restraints;
                 unsigned int disable_contact = (unsigned int)rand_int(0, settings.active_restraints - 1, 
                                                                       this->random_number_engine);
                 unsigned int enable_contact = (unsigned int)rand_int(settings.active_restraints, this->contact_map.size() - 1,
                                                                      this->random_number_engine);
 
-                Contact temp_swap;
+                AmbiguousContact temp_swap;
                 temp_swap = this->contact_map[disable_contact];
                 this->contact_map[disable_contact] = this->contact_map[enable_contact];
                 this->contact_map[enable_contact] = temp_swap;
@@ -454,7 +654,7 @@ public:
 
         }
 
-        double energy =  get_energy_contacts(this->contact_map);
+        double energy = get_energy_contacts(this->contact_map);
 
         return energy;
      }
