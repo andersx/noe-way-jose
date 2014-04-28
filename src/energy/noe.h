@@ -202,7 +202,17 @@ public:
                     }
                 } else if (atom1_type == "QD1") { atom1_atoms = boost::assign::list_of(definitions::HD11)(definitions::HD12)(definitions::HD13); }
                 else if (atom1_type == "QD2") { atom1_atoms = boost::assign::list_of(definitions::HD21)(definitions::HD22)(definitions::HD23); }
-                else if (atom1_type == "QG1") { atom1_atoms = boost::assign::list_of(definitions::HG11)(definitions::HG12)(definitions::HG13); }
+
+                else if (atom1_type == "QG1") { 
+
+                    if (boost::lexical_cast<std::string>(split_line[1]) == "VAL") {
+                       atom1_atoms = boost::assign::list_of(definitions::HG11)(definitions::HG12)(definitions::HG13);
+                    } else {
+                       atom1_atoms = boost::assign::list_of(definitions::HG12)(definitions::HG13);
+                    }
+                }
+
+
                 else if (atom1_type == "QG2") { atom1_atoms = boost::assign::list_of(definitions::HG21)(definitions::HG22)(definitions::HG23); }
                 else if (atom1_type == "QQD") { atom1_atoms = boost::assign::list_of(definitions::HD11)(definitions::HD12)(definitions::HD13)
                                                                                     (definitions::HD21)(definitions::HD22)(definitions::HD23); }
@@ -221,7 +231,16 @@ public:
                     }
                 } else if (atom2_type == "QD1") { atom2_atoms = boost::assign::list_of(definitions::HD11)(definitions::HD12)(definitions::HD13); }
                 else if (atom2_type == "QD2") { atom2_atoms = boost::assign::list_of(definitions::HD21)(definitions::HD22)(definitions::HD23); }
-                else if (atom2_type == "QG1") { atom2_atoms = boost::assign::list_of(definitions::HG11)(definitions::HG12)(definitions::HG13); }
+                // else if (atom2_type == "QG1") { atom2_atoms = boost::assign::list_of(definitions::HG11)(definitions::HG12)(definitions::HG13); }
+                else if (atom2_type == "QG1") { 
+
+                    if (boost::lexical_cast<std::string>(split_line[4]) == "VAL") {
+                       atom2_atoms = boost::assign::list_of(definitions::HG11)(definitions::HG12)(definitions::HG13);
+                    } else {
+                       atom2_atoms = boost::assign::list_of(definitions::HG12)(definitions::HG13);
+                    }
+                }
+
                 else if (atom2_type == "QG2") { atom2_atoms = boost::assign::list_of(definitions::HG21)(definitions::HG22)(definitions::HG23); }
                 else if (atom2_type == "QQD") { atom2_atoms = boost::assign::list_of(definitions::HD11)(definitions::HD12)(definitions::HD13)
                                                                                     (definitions::HD21)(definitions::HD22)(definitions::HD23); }
