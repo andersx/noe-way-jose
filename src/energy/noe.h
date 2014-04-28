@@ -163,13 +163,31 @@ public:
                std::vector<std::string> split_line;
                boost::split(split_line, line, boost::is_any_of(" \t"), boost::token_compress_on);
 
+               std::cout << split_line << std::endl;
+
                 int residue1_index = boost::lexical_cast<int>(split_line[0]) - 1;
                 int residue2_index = boost::lexical_cast<int>(split_line[3]) - 1;
+
+                int residue1_type_int_read = definitions::StrToAa()[boost::lexical_cast<std::string>(split_line[1])];
+                int residue2_type_int_read = definitions::StrToAa()[boost::lexical_cast<std::string>(split_line[4])];
+
+                int residue1_type_int_real = (int)(*(this->chain))[residue1_index].residue_type;
+                int residue2_type_int_real = (int)(*(this->chain))[residue2_index].residue_type;
+
+                if (residue1_type_int_read != residue1_type_int_real) {
+                    std::cerr << "# ERROR: Wrong residue type read from file.\n";
+                    exit(EXIT_FAILURE);
+                }
+
+                if (residue2_type_int_read != residue2_type_int_real) {
+                    std::cerr << "# ERROR: Wrong residue type read from file.\n";
+                    exit(EXIT_FAILURE);
+                }
+
 
                 std::string atom1_type = boost::lexical_cast<std::string>(split_line[2]);
                 std::string atom2_type = boost::lexical_cast<std::string>(split_line[5]);
 
-                std::cout << split_line << std::endl;
 
                 std::vector<definitions::AtomEnum> atom1_atoms;
                 std::vector<definitions::AtomEnum> atom2_atoms;
@@ -301,9 +319,17 @@ public:
             std::cerr << "# Error: Cannot open UPL file " << settings.upl_filename << " .\n";
             exit(EXIT_FAILURE);
         }
+
         read_contact_map(chain, input_stream, settings);
 
         contact_map_old = contact_map;
+
+        if (!(settings.active_restraints < contact_map.size())) {
+            std::cerr << "# ERROR: " << settings.active_restraints << " active restraints out of " << contact_map.size() << " specified.\n";
+            exit(EXIT_FAILURE);
+        }
+
+
 
         did_swap = false;
 
@@ -346,6 +372,8 @@ public:
                           contact.atom2_types[k])->position;
             double r_pair = (r1 - r2).norm();
 
+            // std::cout << "PAIR: " << r_pair << std::endl;
+
             if (r_pair < r_actual) r_actual = r_pair;
 
 
@@ -362,9 +390,11 @@ public:
          // for(unsigned int i=0; i<this->contact_map.size(); i++){
          for(unsigned int i=0; i < settings.active_restraints; i++){
 
-            // double r_actual = calc_distance_guntert(map[i]);
+            // double r_actual_guentert = calc_distance_guntert(map[i]);
             double r_actual = calc_distance_nearest(map[i]);
             double r_equilibrium = map[i].distance;
+
+            // std::cout << r_equilibrium << " vs. " << r_actual << " vs. " << r_actual_guentert << std::endl;
 
             energy += rosetta_bounded_potential(r_actual, r_equilibrium, settings.weight_constant);
         }
