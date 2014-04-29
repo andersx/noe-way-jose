@@ -154,15 +154,15 @@ public:
 
         // Add types of ambiguous restraints here
         enum_map["QB"]  = boost::assign::list_of(definitions::CB);
-        enum_map["QD"]  = boost::assign::list_of(definitions::CD);
-        enum_map["QD1"] = boost::assign::list_of(definitions::CD1);
-        enum_map["QD2"] = boost::assign::list_of(definitions::CD2);
         enum_map["QG"]  = boost::assign::list_of(definitions::CG);
         enum_map["QG1"] = boost::assign::list_of(definitions::CG1);
         enum_map["QG2"] = boost::assign::list_of(definitions::CG2);
-        enum_map["QQD"] = boost::assign::list_of(definitions::CD1)(definitions::CD2);
+        enum_map["QD"]  = boost::assign::list_of(definitions::CD)(definitions::CD1)(definitions::CD2);
+        enum_map["QD1"] = boost::assign::list_of(definitions::CD1);
+        enum_map["QD2"] = boost::assign::list_of(definitions::CD2)(definitions::ND2);
         enum_map["QQG"] = boost::assign::list_of(definitions::CG1)(definitions::CG2);
-        enum_map["QE"]  = boost::assign::list_of(definitions::CE);
+        enum_map["QQD"] = boost::assign::list_of(definitions::CD1)(definitions::CD2);
+        enum_map["QE"]  = boost::assign::list_of(definitions::CE)(definitions::NE2)(definitions::CE1)(definitions::CE2);
 
         // Check if atom name exists in enum_map.
         if (enum_map.count(atom_name) > 0) {
@@ -172,6 +172,8 @@ public:
             for (std::vector<definitions::AtomEnum>::iterator carbon_atom = carbon_atoms.begin();
                  carbon_atom != carbon_atoms.end(); ++carbon_atom) {
 
+                if (! (*(this->chain))[res_id].has_atom((*carbon_atom))) continue;
+
                 std::vector<std::pair<definitions::AtomEnum, int> > neighbours =
                         (*(this->chain))[res_id][(*carbon_atom)]->covalent_neighbours;
 
@@ -180,6 +182,8 @@ public:
 
                     definitions::AtomEnum neighbour = neighbour_pair->first;
                     double neighbour_mass = (*(this->chain))[res_id][neighbour]->mass;
+
+                    if (! (*(this->chain))[res_id].has_atom(neighbour)) continue;
 
                     if (neighbour_mass == definitions::atom_h_weight)
                         return_atoms.push_back(neighbour);
@@ -271,24 +275,24 @@ public:
                 exit(EXIT_FAILURE);
             }
 
-            // Check if atoms really exist within the chain.
-            for (unsigned int i = 0; i < contact.atom1_types.size(); i++) {
+            // // Check if atoms really exist within the chain.
+            // for (unsigned int i = 0; i < contact.atom1_types.size(); i++) {
 
-               if (!(*(this->chain))[contact.residue_index1].has_atom(contact.atom1_types[i])) {
-                   std::cout << "# CONTACT ERROR: " << contact.residue_index1 + 1<< " "
-                                                   << contact.atom1_types[i] << std::endl;
-                   exit(EXIT_FAILURE);
-               }
-            }
+            //    if (!(*(this->chain))[contact.residue_index1].has_atom(contact.atom1_types[i])) {
+            //        std::cout << "# CONTACT ERROR: " << contact.residue_index1 + 1<< " "
+            //                                        << contact.atom1_types[i] << std::endl;
+            //        exit(EXIT_FAILURE);
+            //    }
+            // }
 
-            for (unsigned int i = 0; i < contact.atom2_types.size(); i++) {
+            // for (unsigned int i = 0; i < contact.atom2_types.size(); i++) {
 
-                if (!(*(this->chain))[contact.residue_index2].has_atom(contact.atom2_types[i])) {
-                    std::cout << "# CONTACT ERROR: " << contact.residue_index2 + 1 << " "
-                                               << contact.atom2_types[i] << std::endl;
-                    exit(EXIT_FAILURE);
-                }
-            }
+            //     if (!(*(this->chain))[contact.residue_index2].has_atom(contact.atom2_types[i])) {
+            //         std::cout << "# CONTACT ERROR: " << contact.residue_index2 + 1 << " "
+            //                                    << contact.atom2_types[i] << std::endl;
+            //         exit(EXIT_FAILURE);
+            //     }
+            // }
 
             // Save and print the contact
             contact_map.push_back(contact);
@@ -391,6 +395,10 @@ public:
 
             double r_actual = calc_distance_guntert(map[i]);
             double r_equilibrium = map[i].distance;
+
+            if (settings.debug > 0) std::cout << "# NOE Debug: " << map[i]
+                                      << " r = " << r_actual
+                                      << "   E = " << rosetta_bounded_potential(r_actual, r_equilibrium, settings.weight_constant) << std::endl;
 
             energy += rosetta_bounded_potential(r_actual, r_equilibrium, settings.weight_constant);
         }
