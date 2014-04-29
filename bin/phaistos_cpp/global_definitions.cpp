@@ -25,10 +25,10 @@ struct EnergyInitialization {
 
                // Settings typedef
                typedef typename TermNoe<ChainFB>::Settings Settings;
+               Settings settings = options.get_settings<Settings>(option, i);
 
                // Add energy term
-               energy->add_term(new TermNoe<ChainFB>(chain,
-                                                               options.get_settings<Settings>(option,i)));
+               energy->add_term(new TermNoe<ChainFB>(chain, settings));
           }
      }
 

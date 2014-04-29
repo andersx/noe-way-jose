@@ -356,25 +356,25 @@ public:
 
 
 
-    // double calc_distance_guntert(AmbiguousContact contact) {
+    double calc_distance_guntert(AmbiguousContact contact) {
 
 
-    //     double r_actual = 0.0;
+        double r_actual = 0.0;
 
-    //     for (unsigned int j = 0; j < contact.atom1_types.size(); j++) {
-    //         for (unsigned int k = 0; k < contact.atom2_types.size(); k++) {
+        for (unsigned int j = 0; j < contact.atom1_types.size(); j++) {
+            for (unsigned int k = 0; k < contact.atom2_types.size(); k++) {
 
 
-    //         Vector_3D r1 = (*(this->chain))(contact.residue_index1,
-    //                       contact.atom1_types[j])->position;
-    //         Vector_3D r2 = (*(this->chain))(contact.residue_index2,
-    //                       contact.atom2_types[k])->position;
-    //         r_actual +=  std::pow((r1 - r2).norm_squared(), -3.0);
-    //         }
-    //     }
+            Vector_3D r1 = (*(this->chain))(contact.residue_index1,
+                          contact.atom1_types[j])->position;
+            Vector_3D r2 = (*(this->chain))(contact.residue_index2,
+                          contact.atom2_types[k])->position;
+            r_actual +=  std::pow((r1 - r2).norm_squared(), -3.0);
+            }
+        }
 
-    //     return std::pow(r_actual, (-1.0/6.0));
-    // }
+        return std::pow(r_actual, (-1.0/6.0));
+    }
 
 
     double calc_distance_nearest(AmbiguousContact contact) {
@@ -484,6 +484,136 @@ public:
 
 
 };
+
+//! Observable specialization for TermMumu
+template <typename CHAIN_TYPE>
+class Observable<TermNoe<CHAIN_TYPE> >: public TermNoe<CHAIN_TYPE>, public ObservableBase {
+
+public:
+
+     //! Local settings class.
+     const class Settings: public TermNoe<CHAIN_TYPE>::Settings, public ObservableBase::Settings {
+     public:
+
+          //! Constructor. Defines default values for settings object.
+          Settings(){}
+
+          //! Output operator
+          friend std::ostream &operator<<(std::ostream &o, const Settings &settings) {
+               o << static_cast<const typename TermNoe<CHAIN_TYPE>::Settings>(settings);
+               o << static_cast<const ObservableBase::Settings>(settings);
+               return o;
+          }
+     } settings; //!< Local settings object·
+
+     //! Constructor.
+     //! \param energy_term VisibleVolume energy term object
+     //! \param settings Local Settings object
+     //! \param reference_energy_function All observables have a pointer to a reference energy function which they can refer to.
+     Observable(const TermNoe<CHAIN_TYPE> &energy_term,
+                const ObservableBase::Settings &settings=ObservableBase::Settings(),
+                Energy<CHAIN_TYPE> *reference_energy_function=NULL)
+          : TermNoe<CHAIN_TYPE>(energy_term),
+            settings(dynamic_cast<const Settings&>(settings)) {
+     }
+
+     //! Copy Constructor.
+     //! \param other Source object from which copy is made
+     //! \param thread_index Index indicating in which thread|rank the copy exists
+     //! \param chain Molecule chain
+     Observable(const Observable &other, int thread_index,
+                typename TermNoe<CHAIN_TYPE>::ChainType *chain)
+          : TermNoe<CHAIN_TYPE>(other, thread_index, chain),
+            settings(other.settings) {
+     }
+
+
+     //! Clone: Corresponds to a virtual copy constructor
+     //! \param thread_index Index indicating in which thread|rank the copy exists
+     //! \param chain Molecule chain
+     TermNoe<CHAIN_TYPE> *clone(int thread_index=0,
+                                 typename TermNoe<CHAIN_TYPE>::ChainType *chain=NULL) {
+          return new Observable<TermNoe<CHAIN_TYPE> >(*this, thread_index, chain);
+     }
+
+
+
+
+     // //! Evaluate the repulsive energy
+     // double evaluate(MoveInfo *moveInfo=NULL) {
+
+
+     //    double energy = 0.0;
+
+     //        for(unsigned int i=0; i<this->contact_map.size(); i++){
+
+     //             double r_actual = calc_distance_nearest(this->contact_map[i]);
+     //           double r_equilibrium = this->contact_map[i].distance;
+
+     //            energy += rosetta_bounded_potential(r_actual, r_equilibrium, settings.weight_constant);
+
+     //        }
+     //    return energy;
+     // }
+
+
+     //! Make observation.
+     virtual std::string observe(MoveInfo *move_info=NULL,
+                                 PHAISTOS_LONG_LONG current_iteration=0,
+                                 bool register_only=false) {
+
+            // this->evaluate(move_info);
+
+            double energy = 0.0;
+
+            unsigned int violations_1 = 0;
+            unsigned int violations_larger = 0;
+
+            for (unsigned int i=0; i<this->contact_map.size(); i++){
+
+                    double r_actual = calc_distance_nearest(this->contact_map[i]);
+                    double r_equilibrium = this->contact_map[i].distance;
+
+
+                    double r_guntert = calc_distance_guntert(this->contact_map[i]);
+
+                    if (r_guntert < r_equilibrium) {
+                        // Do nothing
+                    } else if (r_guntert < r_equilibrium + 1.0) {
+                        violations_1 += 1;
+                    } else {
+                        violations_larger += 1;
+                    }
+
+
+                    energy += rosetta_bounded_potential(r_actual, r_equilibrium, settings.weight_constant);
+
+            }
+
+          std::stringstream s;
+          s << std::fixed << std::setprecision(2) << energy;
+          std::string res = s.str();
+
+          std::string output = "[";
+          // output += boost::lexical_cast<std::string>(energy);
+          // output += "%.2f\n", diff;
+          output += res;
+
+          output += ",";
+          output += boost::lexical_cast<std::string>(violations_1);
+          output += ",";
+          output += boost::lexical_cast<std::string>(violations_larger);
+          output += "]";
+
+
+
+          return output;
+     }
+
+};
+
+
+
 
 } // end namespace phaistos
 #endif

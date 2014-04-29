@@ -1,6 +1,7 @@
 namespace module_noe {
 
 //! Module: energy term initialization
+template <typename SETTINGS_MODIFIER>
 struct EnergyOptions {
 
      //! Constructor - general case: do nothing
@@ -28,10 +29,11 @@ struct EnergyOptions {
           // noe term
           for (int counter = occurrences[prefix+"-noe"]; counter > 0; counter--) {
 
-
                // Create settings object
-               typedef typename TermNoe<ChainFB>::Settings Settings;
-               boost::shared_ptr<Settings> settings(new Settings());
+               typedef TermNoe<ChainFB> EnergyTerm;
+               typedef EnergyTerm::Settings Settings;
+               boost::shared_ptr<Settings> settings(
+                    SETTINGS_MODIFIER().template modify<EnergyTerm>(new Settings(), prefix));
 
                // Add an options
                target.add(
@@ -52,9 +54,7 @@ struct EnergyOptions {
                               make_vector(std::string("upl-filename"),
                                           std::string("CYANA UPL formatted list of NOE contacts."),
                                           &settings->upl_filename)
-                              )),
-                    super_group, counter==1);
-
+                              )), super_group, counter==1);
           }
     }
 };

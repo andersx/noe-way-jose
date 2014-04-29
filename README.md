@@ -11,7 +11,7 @@ Probabilistic NOE module for PHAISTOS
     energy-noe-weight-constant = 1                                  # Apply an extra weight factor (default is 1.0)
     energy-noe-active-restraints = 1                                # Number of active restraints (default is 1)
     energy-noe-seamless = false                                     # Seamless restraint switching -- experimental! (default is False)
-    energy-noe-upl-filename = "/home/andersx/final.upl"             # CYANA UPL formatted list of NOE contacts
+    energy-noe-upl-filename = ""             # CYANA UPL formatted list of NOE contacts
 
  - Input format is the CYANA UPL format, i.e.:
 
@@ -35,4 +35,4 @@ Probabilistic NOE module for PHAISTOS
 
  - Seamless restraint switching adds a bias, which connects potential surfaces when switching from one set of restraints to another. This effectively forces switching of restraints. Otherwise, they are sampled. This can be used to escape local minima in simulations.
 
-
+ - When used as an observable, all NOEs are used, regardless of the specified number of active restraints. Additionally, then number of restraints violations are reported The output format is [XXXX.XX,YY,ZZ] where XXXX.XX is the energy, YY is the number of NOE restraint violations less than 1 angstrom, and ZZ is the number of NOE restraint violations greater than 1 angstrom.
