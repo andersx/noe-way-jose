@@ -42,9 +42,6 @@ struct EnergyOptions {
                          "NOE term (" + prefix + ")",
                          prefix+"-noe", settings,
                          make_vector(
-                              make_vector(std::string("weight-constant"),
-                                          std::string("Apply an extra weight factor (default is 1.0)"),
-                                          &settings->weight_constant),
                               make_vector(std::string("active-restraints"),
                                           std::string("Number of active restraints (default is 1)"),
                                           &settings->active_restraints),
@@ -56,7 +53,7 @@ struct EnergyOptions {
                                           &settings->upl_filename)
                               )), super_group, counter==1);
           }
-    }
+     }
 };
 
 }
