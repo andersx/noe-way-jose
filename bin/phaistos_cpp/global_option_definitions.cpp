@@ -1,4 +1,4 @@
-namespace module_noe {
+namespace module_distance {
 
 //! Module: energy term initialization
 template <typename SETTINGS_MODIFIER>
@@ -26,11 +26,11 @@ struct EnergyOptions {
           // Import namespace for make_vector
           using namespace boost::fusion;
 
-          // noe term
-          for (int counter = occurrences[prefix+"-noe"]; counter > 0; counter--) {
+          // distance term
+          for (int counter = occurrences[prefix+"-distance"]; counter > 0; counter--) {
 
                // Create settings object
-               typedef TermNoe<ChainFB> EnergyTerm;
+               typedef TermDistance<ChainFB> EnergyTerm;
                typedef EnergyTerm::Settings Settings;
                boost::shared_ptr<Settings> settings(
                     SETTINGS_MODIFIER().template modify<EnergyTerm>(new Settings(), prefix));
@@ -39,17 +39,17 @@ struct EnergyOptions {
                target.add(
                     target.create_options(
                          DefineEnergyCommonOptions(),
-                         "NOE term (" + prefix + ")",
-                         prefix+"-noe", settings,
+                         "Distance term (" + prefix + ")",
+                         prefix+"-distance", settings,
                          make_vector(
                               make_vector(std::string("active-restraints"),
                                           std::string("Number of active restraints (default is 1)"),
                                           &settings->active_restraints),
                               make_vector(std::string("seamless"),
-                                          std::string("Seamless restraint switching -- experimental! (default is False)"),
+                                          std::string("Force the energy difference of a change in restraints to be zero by adding a bias (default True) "),
                                           &settings->seamless),
                               make_vector(std::string("upl-filename"),
-                                          std::string("CYANA UPL formatted list of NOE contacts."),
+                                          std::string("CYANA .UPL formatted list of distance restraints."),
                                           &settings->upl_filename)
                               )), super_group, counter==1);
           }

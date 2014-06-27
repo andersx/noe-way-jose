@@ -1,4 +1,4 @@
-namespace module_noe {
+namespace module_distance {
 
 //! Module: energy term initialization
 struct EnergyInitialization {
@@ -19,16 +19,16 @@ struct EnergyInitialization {
 
           Options::OptionValue option;
 
-          // noe term
-          option = options[prefix+"-noe"];
+          // distance term
+          option = options[prefix+"-distance"];
           for (int i=0; i<option.occurrences(); ++i) {
 
                // Settings typedef
-               typedef typename TermNoe<ChainFB>::Settings Settings;
+               typedef typename TermDistance<ChainFB>::Settings Settings;
                Settings settings = options.get_settings<Settings>(option, i);
 
                // Add energy term
-               energy->add_term(new TermNoe<ChainFB>(chain, settings));
+               energy->add_term(new TermDistance<ChainFB>(chain, settings));
           }
      }
 

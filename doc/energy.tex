@@ -1,9 +1,10 @@
-\section{NOE: NOE and distance restraints term (\texttt{noe})}
+\section{Distance restraints term (\texttt{distance})}
 \label{sec:noe}
 
 This energy function handles distance restraints, such as from NOE experiments.
 The code has been developed with sparse NOE restraints in large proteins $> 100-200$ residues in mind, but also handles other types of distance restraints well, such as for instance distance restraints from co-evolutionary sequence analysis \cite{10.7287/peerj.preprints.374v1}.
-The energy function is a flat-bottom potential with a linear increase at large distances, as used in the RASREC-ROSETTA protocol \cite{LangePNAS2012}. The functional form is:
+The energy function is a flat-bottom potential with a linear increase at large distances, as used in the RASREC-ROSETTA protocol \cite{LangePNAS2012}.
+The functional form is:
 \begin{equation}
    f(x) =
 \begin{cases}
@@ -45,7 +46,7 @@ If random switching of restraints is selected and sampling is performed from the
 This is achieved by using the following keyword \texttt{energy2} to enable the NOE term, and by enable the use of a secondary energy in MUNINN:
 \begin{verbatim}
 monte-carlo-muninn-use-energy2 = 1
-energy2-noe = 1
+energy2-distance = 1
 \end{verbatim}
 \optiontitle{Settings}
 \begin{optiontable}
