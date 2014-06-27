@@ -36,7 +36,9 @@ The optimal choice may vary a lot from protein to protein and from one set of se
 The \texttt{Qx} notation denotes ambiguous restraints, e.g. \texttt{QB} on an Alanine residue denotes that the restraint is from any \texttt{HB} atom.
 The code checks and verifies for correct residue types.
 This check can be disabled by setting the residue type to \texttt{"UNK"} in the .UPL file. 
-\\\\If used as an observable, the energy reported corresponds to the energy contribution from ALL restraints (i.e. not only the active subset). Furthermore, the number of restraints that are satisfied is reported as well as the number of restraints within one and five \AA ngstr\o m from satisfying the restraint. Lastly the number of restraints not satisfying any of these criteria is reported.
+\\\\If used as an observable, the energy reported corresponds to the energy contribution from ALL restraints (i.e. not only the active subset).
+Furthermore, the number of restraints that are satisfied is reported as well as the number of restraints within one and five \AA ngstr\o m, respectively, from satisfying the restraint.
+Lastly the number of restraints not satisfying any of these criteria is reported.
 
 \subsubsection*{NOE energy and MUNINN sampling}
 If random switching of restraints is selected and sampling is performed from the multi-canonical distribution through MUNINN, it is advised to use the NOE energy term as a secondary energy term outside MUNINN. 

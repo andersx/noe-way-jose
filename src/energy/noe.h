@@ -1,5 +1,5 @@
 // noe.h -- Simple NOE term
-// Copyright (C) 2014 by Anders S. Christensen.
+// Copyright (C) 2014 by Anders S. Christensen, Lars Bratholm
 //
 // This file is part of PHAISTOS
 //
@@ -73,9 +73,11 @@ public:
           AmbiguousContact() {}
 
           //! Copy constructor.
-          AmbiguousContact(int residue_index1, std::vector<definitions::AtomEnum> atom1_types,
-                 int residue_index2, std::vector<definitions::AtomEnum> atom2_types,
-                 double distance)
+          AmbiguousContact(int residue_index1, 
+                           std::vector<definitions::AtomEnum> atom1_types,
+                           int residue_index2,
+                           std::vector<definitions::AtomEnum> atom2_types,
+                           double distance)
               : residue_index1(residue_index1),
                 residue_index2(residue_index2),
                 atom1_types(atom1_types),
@@ -83,7 +85,8 @@ public:
                 distance(distance) {}
 
           //! Overload << operator for Contact (compact output).
-          friend std::ostream &operator<<(std::ostream &o, const AmbiguousContact &c) {
+          friend std::ostream &operator<<(std::ostream &o, 
+                                          const AmbiguousContact &c) {
                o << "("
                  << c.residue_index1 + 1 << ","
                  << c.atom1_types << ","
@@ -184,6 +187,7 @@ public:
           enum_map["QQG"] = boost::assign::list_of(CG1)(CG2);
           enum_map["QQD"] = boost::assign::list_of(CD1)(CD2);
           enum_map["QE"]  = boost::assign::list_of(CE)(NE2)(CE1)(CE2);
+          enum_map["QE2"]  = boost::assign::list_of(NE2);
 
           // Check if atom name exists in enum_map.
           if (enum_map.count(atom_name) > 0) {
@@ -466,12 +470,12 @@ public:
           if (move_info) {
                if (move_info->modified_angles.empty() == true) {
 
-                    // Index for a contact in the active part.
+                    // Index for a contact in the active part, which runs from 0 to (active_restraints - 1).
                     unsigned int disable_contact = (unsigned int)rand_int(0, 
                                                                           this->settings.active_restraints - 1,
                                                                           this->random_number_engine);
 
-                    // Index for a contact in the inactive part.
+                    // Index for a contact in the inactive part, which runs from active_restraints to (contact_map.size() - 1).
                     unsigned int enable_contact = (unsigned int)rand_int(this->settings.active_restraints,
                                                                          this->contact_map.size() - 1,
                                                                          this->random_number_engine);
@@ -480,7 +484,7 @@ public:
                     std::swap(this->contact_map[enable_contact],
                               this->contact_map[disable_contact]);
 
-                    // Notify that a swap was performed.
+                    // Notify accept and reject functions, that a swap was performed.
                     this->did_swap = true;
                }
 
@@ -493,12 +497,20 @@ public:
 
      //! Accept change in restraints and backup contact map.
      void accept() {
-          if (this->did_swap) this->contact_map_old = this->contact_map;
+
+          if (this->did_swap) {
+               this->contact_map_old = this->contact_map;
+          }
+
      }
 
      //! Reject change in restraints and roll back to the backup contact map.
      void reject() {
-          if (this->did_swap) this->contact_map = this->contact_map_old;
+
+          if (this->did_swap) {
+               this->contact_map = this->contact_map_old;
+          }
+
      }
 
 }; // End class TermNoe
