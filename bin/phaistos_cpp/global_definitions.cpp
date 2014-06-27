@@ -1,4 +1,4 @@
-namespace module_distance {
+namespace module_distance_restraints {
 
 //! Module: energy term initialization
 struct EnergyInitialization {
@@ -19,16 +19,16 @@ struct EnergyInitialization {
 
           Options::OptionValue option;
 
-          // distance term
-          option = options[prefix+"-distance"];
+          // Distance restraints term
+          option = options[prefix+"-distance-restraints"];
           for (int i=0; i<option.occurrences(); ++i) {
 
                // Settings typedef
-               typedef typename TermDistance<ChainFB>::Settings Settings;
+               typedef typename TermDistanceRestraints<ChainFB>::Settings Settings;
                Settings settings = options.get_settings<Settings>(option, i);
 
                // Add energy term
-               energy->add_term(new TermDistance<ChainFB>(chain, settings));
+               energy->add_term(new TermDistanceRestraints<ChainFB>(chain, settings));
           }
      }
 

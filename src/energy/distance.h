@@ -1,4 +1,4 @@
-// distance.h -- Simple distance restraint term
+// distance.h -- Simple distance restraints energy term
 // Copyright (C) 2014 by Anders S. Christensen, Lars Bratholm
 //
 // This file is part of PHAISTOS
@@ -17,8 +17,8 @@
 // along with PHAISTOS.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef TERM_DISTANCE
-#define TERM_DISTANCE
+#ifndef TERM_DISTANCE_RESTRAINTS
+#define TERM_DISTANCE_RESTRAINTS
 
 #include <iostream>
 #include <vector>
@@ -39,12 +39,12 @@ namespace phaistos {
 
 template <typename CHAIN_TYPE>
 //! Class for the distance energy term.
-class TermDistance: public EnergyTermCommon<TermDistance<CHAIN_TYPE>, CHAIN_TYPE> {
+class TermDistanceRestraints: public EnergyTermCommon<TermDistanceRestraints<CHAIN_TYPE>, CHAIN_TYPE> {
 
 private:
 
      //! For convenience, define local EnergyTermCommon.
-     typedef phaistos::EnergyTermCommon<TermDistance<CHAIN_TYPE>,CHAIN_TYPE> EnergyTermCommon;
+     typedef phaistos::EnergyTermCommon<TermDistanceRestraints<CHAIN_TYPE>,CHAIN_TYPE> EnergyTermCommon;
 
 public:
 
@@ -138,23 +138,23 @@ public:
          unsigned int active_restraints;
 
          //! Whether to switch constraints with bias (=true) or without bias (=false).
-         bool seamless;
+         bool bias;
 
          //! File containing contacts, two supported file formats:
          std::string upl_filename;
 
          //! Constructor and a reasonable default values.
          Settings(unsigned int active_restraints=1,
-                  bool seamless=false,
+                  bool bias=true,
                   std::string upl_filename="")
               : active_restraints(active_restraints),
-                seamless(seamless),
+                bias(bias),
                 upl_filename(upl_filename) {}
 
          //! Output operator.
          friend std::ostream &operator<<(std::ostream &o, const Settings &settings) {
               o << "active-restraints:" << settings.active_restraints<< "\n";
-              o << "seamless:" << settings.seamless << "\n";
+              o << "bias:" << settings.bias << "\n";
               o << "upl-filename: " << settings.upl_filename << "\n";
               o << static_cast<const typename EnergyTerm<CHAIN_TYPE>::Settings>(settings);
               return o;
@@ -344,9 +344,9 @@ public:
      }
 
      //! Constructor
-     TermDistance(CHAIN_TYPE *chain, const Settings &settings=Settings(),
+     TermDistanceRestraints(CHAIN_TYPE *chain, const Settings &settings=Settings(),
                  RandomNumberEngine *random_number_engine = &random_global)
-          : EnergyTermCommon(chain, "distance", settings, random_number_engine),
+          : EnergyTermCommon(chain, "distance-restraints", settings, random_number_engine),
             random_number_engine(random_number_engine),
             settings(settings) {
 
@@ -428,7 +428,8 @@ public:
 
 
      //! Copy constructor
-     TermDistance(const TermDistance &other, RandomNumberEngine *random_number_engine,
+     TermDistanceRestraints(const TermDistanceRestraints &other, 
+             RandomNumberEngine *random_number_engine,
              int thread_index, CHAIN_TYPE *chain)
           : EnergyTermCommon(other, random_number_engine, thread_index, chain),
             random_number_engine(random_number_engine),
@@ -443,7 +444,7 @@ public:
      }
 
 
-     //! Get the log bias from a move in energy. If seamless is enabled, the log bias is exactly
+     //! Get the log bias from a move in energy. If bias is enabled, the log bias is exactly
      //! the difference in energy between the contact map before and after the move.
      //! \param move_info
      //! \return log_bias The log bias associated with the change in restraints.
@@ -451,7 +452,7 @@ public:
 
           double log_bias = 0.0;
 
-          if ((this->did_swap) && (this->settings.seamless)) {
+          if ((this->did_swap) && (this->settings.bias)) {
                log_bias = this->get_energy_contacts(this->contact_map)
                         - this->get_energy_contacts(this->contact_map_old);
           }
@@ -513,17 +514,18 @@ public:
 
      }
 
-}; // End class TermDistance
+}; // End class TermDistanceRestraints
 
-//! Observable specialization for TermDistance
+//! Observable specialization for TermDistanceRestraints
 template <typename CHAIN_TYPE>
-class Observable<TermDistance<CHAIN_TYPE> >: public TermDistance<CHAIN_TYPE>,
-                                             public ObservableBase {
+class Observable<TermDistanceRestraints<CHAIN_TYPE> >: public TermDistanceRestraints<CHAIN_TYPE>,
+                                                       public ObservableBase {
 
 public:
 
      //! Local settings class.
-     const class Settings: public TermDistance<CHAIN_TYPE>::Settings, public ObservableBase::Settings {
+     const class Settings: public TermDistanceRestraints<CHAIN_TYPE>::Settings, 
+                           public ObservableBase::Settings {
      public:
 
           //! Constructor. Defines default values for settings object.
@@ -531,7 +533,7 @@ public:
 
           //! Output operator
           friend std::ostream &operator<<(std::ostream &o, const Settings &settings) {
-               o << static_cast<const typename TermDistance<CHAIN_TYPE>::Settings>(settings);
+               o << static_cast<const typename TermDistanceRestraints<CHAIN_TYPE>::Settings>(settings);
                o << static_cast<const ObservableBase::Settings>(settings);
                return o;
           }
@@ -541,10 +543,10 @@ public:
      //! \param energy_term VisibleVolume energy term object
      //! \param settings Local Settings object
      //! \param reference_energy_function All observables have a pointer to a reference energy function which they can refer to.
-     Observable(const TermDistance<CHAIN_TYPE> &energy_term,
+     Observable(const TermDistanceRestraints<CHAIN_TYPE> &energy_term,
                 const ObservableBase::Settings &settings=ObservableBase::Settings(),
                 Energy<CHAIN_TYPE> *reference_energy_function=NULL)
-          : TermDistance<CHAIN_TYPE>(energy_term),
+          : TermDistanceRestraints<CHAIN_TYPE>(energy_term),
             settings(dynamic_cast<const Settings&>(settings)) {
      }
 
@@ -553,8 +555,8 @@ public:
      //! \param thread_index Index indicating in which thread|rank the copy exists
      //! \param chain Molecule chain
      Observable(const Observable &other, int thread_index,
-                typename TermDistance<CHAIN_TYPE>::ChainType *chain)
-          : TermDistance<CHAIN_TYPE>(other, thread_index, chain),
+                typename TermDistanceRestraints<CHAIN_TYPE>::ChainType *chain)
+          : TermDistanceRestraints<CHAIN_TYPE>(other, thread_index, chain),
             settings(other.settings) {
      }
 
@@ -562,9 +564,9 @@ public:
      //! Clone: Corresponds to a virtual copy constructor
      //! \param thread_index Index indicating in which thread|rank the copy exists
      //! \param chain Molecule chain
-     TermDistance<CHAIN_TYPE> *clone(int thread_index=0,
-                                typename TermDistance<CHAIN_TYPE>::ChainType *chain=NULL) {
-          return new Observable<TermDistance<CHAIN_TYPE> >(*this, thread_index, chain);
+     TermDistanceRestraints<CHAIN_TYPE> *clone(int thread_index=0,
+                     typename TermDistanceRestraints<CHAIN_TYPE>::ChainType *chain=NULL) {
+          return new Observable<TermDistanceRestraints<CHAIN_TYPE> >(*this, thread_index, chain);
      }
 
      // https://www.rosettacommons.org/manuals/archive/rosetta3.5_user_guide/de/d50/constraint_file.html

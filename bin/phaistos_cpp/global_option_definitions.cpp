@@ -1,4 +1,4 @@
-namespace module_distance {
+namespace module_distance_restraints {
 
 //! Module: energy term initialization
 template <typename SETTINGS_MODIFIER>
@@ -26,11 +26,11 @@ struct EnergyOptions {
           // Import namespace for make_vector
           using namespace boost::fusion;
 
-          // distance term
-          for (int counter = occurrences[prefix+"-distance"]; counter > 0; counter--) {
+          // Distance restraints term
+          for (int counter = occurrences[prefix+"-distance-restraints"]; counter > 0; counter--) {
 
                // Create settings object
-               typedef TermDistance<ChainFB> EnergyTerm;
+               typedef TermDistanceRestraints<ChainFB> EnergyTerm;
                typedef EnergyTerm::Settings Settings;
                boost::shared_ptr<Settings> settings(
                     SETTINGS_MODIFIER().template modify<EnergyTerm>(new Settings(), prefix));
@@ -39,15 +39,15 @@ struct EnergyOptions {
                target.add(
                     target.create_options(
                          DefineEnergyCommonOptions(),
-                         "Distance term (" + prefix + ")",
-                         prefix+"-distance", settings,
+                         "Distance restraints term (" + prefix + ")",
+                         prefix+"-distance-restraints", settings,
                          make_vector(
                               make_vector(std::string("active-restraints"),
                                           std::string("Number of active restraints (default is 1)"),
                                           &settings->active_restraints),
-                              make_vector(std::string("seamless"),
+                              make_vector(std::string("bias"),
                                           std::string("Force the energy difference of a change in restraints to be zero by adding a bias (default True) "),
-                                          &settings->seamless),
+                                          &settings->bias),
                               make_vector(std::string("upl-filename"),
                                           std::string("CYANA .UPL formatted list of distance restraints."),
                                           &settings->upl_filename)

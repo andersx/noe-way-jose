@@ -1,4 +1,4 @@
-\section{Distance restraints term (\texttt{distance})}
+\section{Distance restraints term (\texttt{distance-restraints})}
 \label{sec:noe}
 
 This energy function handles distance restraints, such as from NOE experiments.
@@ -21,7 +21,7 @@ $lb = 1.5$ \AA, $sd = 0.3$ \AA, and $rswitch = 0.5$ \AA.
 \\\\To avoid getting trapped in local minima, only a fraction of all the restraints are used at a time.
 This is done to allow the structure to easily get out of conformations where restraints constrain the structure to a misfolded, non-native conformation which may satisfies several constraints.
 
-Restraints can be switched between on and off states randomly (default behavior), or according to the Boltzmann distribution (or multi-canonical distribution if MUNINN is used).
+Restraints can be switched between on and off states randomly (default behavior), or according to the Boltzmann distribution (or multi-canonical distribution if MUNINN is used). Random switching is achieved by adding an energy bias to the move that switches restraints.
 
 The number of concurrently active restraints is constant and set by the user.
 Suggested numbers could be 20-30\% of all restraints for a folding simulation (from unfolded), and 75-100\% of all restraints for a refinement simulation.
@@ -41,16 +41,16 @@ This check can be disabled by setting the residue type to \texttt{"UNK"} in the 
 Furthermore, the number of restraints that are satisfied is reported as well as the number of restraints within one and five \AA ngstr\o m, respectively, from satisfying the restraint.
 Lastly the number of restraints not satisfying any of these criteria is reported.
 
-\subsubsection*{NOE energy and MUNINN sampling}
-If random switching of restraints is selected and sampling is performed from the multi-canonical distribution through MUNINN, it is advised to use the NOE energy term as a secondary energy term outside MUNINN. 
-This is achieved by using the following keyword \texttt{energy2} to enable the NOE term, and by enable the use of a secondary energy in MUNINN:
+\subsubsection*{Distance restraints energy and Monte Carlo MUNINN }
+If random switching of restraints is selected and sampling is performed from the multi-canonical distribution through MUNINN, it is advised to use the distance restraints energy term as a secondary energy term outside MUNINN. 
+This is achieved by using the keyword \texttt{energy2} to enable the distance restraints term, and by enable the use of a secondary energy in MUNINN:
 \begin{verbatim}
 monte-carlo-muninn-use-energy2 = 1
-energy2-distance = 1
+energy2-distance-restraints = 1
 \end{verbatim}
 \optiontitle{Settings}
 \begin{optiontable}
   \option{active-restraints}{int}{0}{The number of simultaneously active restraints during simulation.}
-  \option{seamless}{bool}{True}{Force the energy difference of a change in restraints to be zero by adding a bias (i.e. randomly switch stat of a given restraint).}
+  \option{bias}{bool}{True}{Force the energy difference of a change in restraints to be zero by adding a bias.}
   \option{upl-filename}{string}{default}{The name of the CYANA .UPL-formatted file containing the restraints.}
 \end{optiontable}
